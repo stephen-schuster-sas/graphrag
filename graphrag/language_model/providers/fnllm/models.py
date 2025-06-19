@@ -38,6 +38,9 @@ if TYPE_CHECKING:
         LanguageModelConfig,
     )
 
+import logging
+
+log = logging.getLogger(__name__)
 
 class OpenAIChatFNLLM:
     """An OpenAI Chat Model provider using the fnllm library."""
@@ -82,6 +85,7 @@ class OpenAIChatFNLLM:
             response = await self.model(prompt, **kwargs)
         else:
             response = await self.model(prompt, history=history, **kwargs)
+        print('OpenAIChatFNLLM.achat:',response.usage)
         return BaseModelResponse(
             output=BaseModelOutput(
                 content=response.output.content,
@@ -112,6 +116,7 @@ class OpenAIChatFNLLM:
             response = await self.model(prompt, stream=True, **kwargs)
         else:
             response = await self.model(prompt, history=history, stream=True, **kwargs)
+        print('OpenAIChatFNLLM.achat_stream:',response.usage)
         async for chunk in response.output.content:
             if chunk is not None:
                 yield chunk
@@ -186,6 +191,7 @@ class OpenAIEmbeddingFNLLM:
             The embeddings of the text.
         """
         response = await self.model(text_list, **kwargs)
+        print('OpenAIEmbeddingFNLLM.aembed_batch:',response.usage)
         if response.output.embeddings is None:
             msg = "No embeddings found in response"
             raise ValueError(msg)
@@ -205,6 +211,7 @@ class OpenAIEmbeddingFNLLM:
             The embeddings of the text.
         """
         response = await self.model([text], **kwargs)
+        print('OpenAIEmbeddingFNLLM.aembed:',response.usage)
         if response.output.embeddings is None:
             msg = "No embeddings found in response"
             raise ValueError(msg)
@@ -284,6 +291,7 @@ class AzureOpenAIChatFNLLM:
             response = await self.model(prompt, **kwargs)
         else:
             response = await self.model(prompt, history=history, **kwargs)
+        print('AzureOpenAIChatFNLLM.achat:',response.usage)
         return BaseModelResponse(
             output=BaseModelOutput(
                 content=response.output.content,
@@ -315,6 +323,7 @@ class AzureOpenAIChatFNLLM:
             response = await self.model(prompt, stream=True, **kwargs)
         else:
             response = await self.model(prompt, history=history, stream=True, **kwargs)
+        print('AzureOpenAIChatFNLLM.achat_stream:',response.usage)
         async for chunk in response.output.content:
             if chunk is not None:
                 yield chunk
@@ -389,6 +398,7 @@ class AzureOpenAIEmbeddingFNLLM:
             The embeddings of the text.
         """
         response = await self.model(text_list, **kwargs)
+        print('AzureOpenAIEmbeddingFNLLM.aembed_batch:',response.usage)
         if response.output.embeddings is None:
             msg = "No embeddings found in response"
             raise ValueError(msg)
@@ -408,6 +418,7 @@ class AzureOpenAIEmbeddingFNLLM:
             The embeddings of the text.
         """
         response = await self.model([text], **kwargs)
+        print('AzureOpenAIEmbeddingFNLLM.aembed:',response.usage)
         if response.output.embeddings is None:
             msg = "No embeddings found in response"
             raise ValueError(msg)
