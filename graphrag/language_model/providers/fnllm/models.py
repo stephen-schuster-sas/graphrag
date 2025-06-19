@@ -5,9 +5,6 @@
 
 from __future__ import annotations
 
-cumulative_input_tokens = 0
-cumulative_output_tokens = 0
-
 from typing import TYPE_CHECKING
 
 from fnllm.openai import (
@@ -41,9 +38,11 @@ if TYPE_CHECKING:
         LanguageModelConfig,
     )
 
-import logging
-
-log = logging.getLogger(__name__)
+def log_tokens(input_tokens: int, output_tokens: int) -> None:
+    assert isinstance(input_tokens, int) and input_tokens >= 0, "Input tokens must be a non-negative integer"
+    assert isinstance(output_tokens, int) and output_tokens >= 0, "Output tokens must be a non-negative integer"
+    with open("/home/stephen/graphrag-experiments/token_usage.log", "a") as f:
+        f.write(f"{input_tokens}, {output_tokens}\n")
 
 class OpenAIChatFNLLM:
     """An OpenAI Chat Model provider using the fnllm library."""
@@ -290,10 +289,7 @@ class AzureOpenAIChatFNLLM:
             response = await self.model(prompt, **kwargs)
         else:
             response = await self.model(prompt, history=history, **kwargs)
-        global cumulative_input_tokens, cumulative_output_tokens
-        cumulative_input_tokens += response.metrics.usage.input_tokens
-        cumulative_output_tokens += response.metrics.usage.output_tokens
-        log.info(f"Cumulative LLM Token Usage: Input: {cumulative_input_tokens}, Output: {cumulative_output_tokens}")
+        log_tokens(response.metrics.usage.input_tokens, response.metrics.usage.output_tokens)
         return BaseModelResponse(
             output=BaseModelOutput(
                 content=response.output.content,
@@ -325,10 +321,7 @@ class AzureOpenAIChatFNLLM:
             response = await self.model(prompt, stream=True, **kwargs)
         else:
             response = await self.model(prompt, history=history, stream=True, **kwargs)
-        global cumulative_input_tokens, cumulative_output_tokens
-        cumulative_input_tokens += response.metrics.usage.input_tokens
-        cumulative_output_tokens += response.metrics.usage.output_tokens
-        log.info(f"Cumulative LLM Token Usage: Input: {cumulative_input_tokens}, Output: {cumulative_output_tokens}")
+        log_tokens(response.metrics.usage.input_tokens, response.metrics.usage.output_tokens)
         async for chunk in response.output.content:
             if chunk is not None:
                 yield chunk
@@ -403,10 +396,7 @@ class AzureOpenAIEmbeddingFNLLM:
             The embeddings of the text.
         """
         response = await self.model(text_list, **kwargs)
-        global cumulative_input_tokens, cumulative_output_tokens
-        cumulative_input_tokens += response.metrics.usage.input_tokens
-        cumulative_output_tokens += response.metrics.usage.output_tokens
-        log.info(f"Cumulative LLM Token Usage: Input: {cumulative_input_tokens}, Output: {cumulative_output_tokens}")
+        log_tokens(response.metrics.usage.input_tokens, response.metrics.usage.output_tokens)
         if response.output.embeddings is None:
             msg = "No embeddings found in response"
             raise ValueError(msg)
@@ -426,10 +416,7 @@ class AzureOpenAIEmbeddingFNLLM:
             The embeddings of the text.
         """
         response = await self.model([text], **kwargs)
-        global cumulative_input_tokens, cumulative_output_tokens
-        cumulative_input_tokens += response.metrics.usage.input_tokens
-        cumulative_output_tokens += response.metrics.usage.output_tokens
-        log.info(f"Cumulative LLM Token Usage: Input: {cumulative_input_tokens}, Output: {cumulative_output_tokens}")
+        log_tokens(response.metrics.usage.input_tokens, response.metrics.usage.output_tokens)
         if response.output.embeddings is None:
             msg = "No embeddings found in response"
             raise ValueError(msg)
