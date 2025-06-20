@@ -39,11 +39,12 @@ if TYPE_CHECKING:
         LanguageModelConfig,
     )
 
-def log_tokens(input_tokens: int, output_tokens: int) -> None:
+def log_tokens(input_tokens: int = 0, output_tokens: int = 0, embedding_tokens:int = 0) -> None:
     assert isinstance(input_tokens, int) and input_tokens >= 0, "Input tokens must be a non-negative integer"
     assert isinstance(output_tokens, int) and output_tokens >= 0, "Output tokens must be a non-negative integer"
+    assert isinstance(embedding_tokens, int) and embedding_tokens >= 0, "Embedding tokens must be a non-negative integer"
     with open("/home/stephen/graphrag-experiments/token_usage.log", "a") as f:
-        f.write(f"{input_tokens}, {output_tokens}\n")
+        f.write(f"{input_tokens},{output_tokens},{embedding_tokens}\n")
 
 class OpenAIChatFNLLM:
     """An OpenAI Chat Model provider using the fnllm library."""
@@ -328,13 +329,13 @@ class AzureOpenAIChatFNLLM:
             response = await self.model(prompt, stream=True, **kwargs)
         else:
             response = await self.model(prompt, history=history, stream=True, **kwargs)
-        log_tokens(response.metrics.usage.input_tokens, 0)
+        log_tokens(response.metrics.usage.input_tokens)
         output_tokens_count = 0
         async for chunk in response.output.content:
             if chunk is not None:
                 yield chunk
                 output_tokens_count += len(encoding.encode(chunk))
-        log_tokens(0, output_tokens_count)
+        log_tokens(output_tokens=output_tokens_count)
 
     def chat(self, prompt: str, history: list | None = None, **kwargs) -> ModelResponse:
         """
@@ -406,7 +407,7 @@ class AzureOpenAIEmbeddingFNLLM:
             The embeddings of the text.
         """
         response = await self.model(text_list, **kwargs)
-        log_tokens(response.metrics.usage.input_tokens, response.metrics.usage.output_tokens)
+        log_tokens(embedding_tokens=response.metrics.usage.input_tokens)
         if response.output.embeddings is None:
             msg = "No embeddings found in response"
             raise ValueError(msg)
@@ -426,7 +427,7 @@ class AzureOpenAIEmbeddingFNLLM:
             The embeddings of the text.
         """
         response = await self.model([text], **kwargs)
-        log_tokens(response.metrics.usage.input_tokens, response.metrics.usage.output_tokens)
+        log_tokens(embedding_tokens=response.metrics.usage.input_tokens)
         if response.output.embeddings is None:
             msg = "No embeddings found in response"
             raise ValueError(msg)
