@@ -39,12 +39,26 @@ if TYPE_CHECKING:
         LanguageModelConfig,
     )
 
+running_est_cost: float = 0.0
+MAX_COST: float = 50.0
+INPUT_COST: float = 5.0 # Cost per million input tokens
+OUTPUT_COST: float = 15.0 # Cost per million output tokens
+EMBEDDING_COST: float = 0.02 # Cost per million embedding tokens
 def log_tokens(input_tokens: int = 0, output_tokens: int = 0, embedding_tokens:int = 0) -> None:
     assert isinstance(input_tokens, int) and input_tokens >= 0, "Input tokens must be a non-negative integer"
     assert isinstance(output_tokens, int) and output_tokens >= 0, "Output tokens must be a non-negative integer"
     assert isinstance(embedding_tokens, int) and embedding_tokens >= 0, "Embedding tokens must be a non-negative integer"
     with open("/home/stephen/graphrag-experiments/token_usage.log", "a") as f:
         f.write(f"{input_tokens},{output_tokens},{embedding_tokens}\n")
+    
+    global running_est_cost
+    running_est_cost += input_tokens / 1_000_000 * INPUT_COST
+    running_est_cost += output_tokens / 1_000_000 * OUTPUT_COST
+    running_est_cost += embedding_tokens / 1_000_000 * EMBEDDING_COST
+
+    if running_est_cost > MAX_COST:
+        msg = f"Estimated cost exceeded {MAX_COST} USD: {running_est_cost} USD"
+        raise Exception(msg)
 
 class OpenAIChatFNLLM:
     """An OpenAI Chat Model provider using the fnllm library."""
