@@ -329,13 +329,12 @@ class AzureOpenAIChatFNLLM:
             response = await self.model(prompt, stream=True, **kwargs)
         else:
             response = await self.model(prompt, history=history, stream=True, **kwargs)
-        log_tokens(response.metrics.usage.input_tokens)
         output_tokens_count = 0
         async for chunk in response.output.content:
             if chunk is not None:
                 yield chunk
                 output_tokens_count += len(encoding.encode(chunk))
-        log_tokens(output_tokens=output_tokens_count)
+        log_tokens(len(encoding.encode(prompt)),output_tokens_count)
 
     def chat(self, prompt: str, history: list | None = None, **kwargs) -> ModelResponse:
         """
