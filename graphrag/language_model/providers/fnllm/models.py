@@ -25,6 +25,7 @@ from graphrag.language_model.response.base import (
     BaseModelResponse,
     ModelResponse,
 )
+import tiktoken
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
@@ -317,14 +318,23 @@ class AzureOpenAIChatFNLLM:
         -------
             A generator that yields strings representing the response.
         """
+        # Get the tiktoken encoding for the model
+        try:
+            encoding = tiktoken.encoding_for_model(self.config.model)
+        except KeyError:
+            # Fallback to a default encoding if the model is not recognized by tiktoken
+            encoding = tiktoken.get_encoding("cl100k_base")
         if history is None:
             response = await self.model(prompt, stream=True, **kwargs)
         else:
             response = await self.model(prompt, history=history, stream=True, **kwargs)
-        log_tokens(response.metrics.usage.input_tokens, response.metrics.usage.output_tokens)
+        log_tokens(response.metrics.usage.input_tokens, 0)
+        output_tokens_count = 0
         async for chunk in response.output.content:
             if chunk is not None:
                 yield chunk
+                output_tokens_count += len(encoding.encode(chunk))
+        log_tokens(0, output_tokens_count)
 
     def chat(self, prompt: str, history: list | None = None, **kwargs) -> ModelResponse:
         """
